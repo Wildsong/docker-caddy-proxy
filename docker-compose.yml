@@ -1,0 +1,70 @@
+version: "3.7"
+
+networks:
+  proxy:
+    name: proxy
+    external: true
+
+volumes:
+  caddy_data:
+    name: caddy_data
+    external: true
+  caddy_config:
+    name: caddy_config
+
+services:
+  caddy:
+    build:
+      context: .
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./content:/srv
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - p1
+      - p2
+      - p3
+
+    #restart: unless-stopped
+
+  # Some services to test reverse proxying.
+  p1:
+    image: caddy:2.4.6
+    ports:
+      - "8002:80"
+    volumes:
+      - ./Caddyfile_p1:/etc/caddy/Caddyfile
+    networks:
+      proxy:
+        aliases: 
+          - p1
+
+    
+  p2:
+    image: caddy:2.4.6
+    ports:
+      - "8003:80"
+    volumes:
+      - ./Caddyfile_p2:/etc/caddy/Caddyfile
+    networks:
+      proxy:
+        aliases: 
+          - p2
+
+    
+  p3:
+    image: caddy:2.4.6
+    ports:
+      - "8004:80"
+    volumes:
+      - ./Caddyfile_p3:/etc/caddy/Caddyfile
+    networks:
+      proxy:
+        aliases: 
+          - p3
+
+
