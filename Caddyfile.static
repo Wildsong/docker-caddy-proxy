@@ -1,0 +1,9 @@
+:80 {
+    root * /srv
+    file_server
+
+    file_server /static {
+        root /srv/static
+    }
+}
+
