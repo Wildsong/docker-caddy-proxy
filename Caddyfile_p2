@@ -1,4 +1,0 @@
-
-:80 {
-  respond "Greetings from P2."
-}
