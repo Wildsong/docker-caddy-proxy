@@ -115,3 +115,8 @@ List the current configuration
 ## Future work
 
 Deal with config issues some more elegant way?
+
+Make it all work under swarm. Currently what's holding me back is Home Assistant, 
+which has to be able to access a USB device to talk Zigbee.
+Until I work that out, I will be stuck in Compose.
+
