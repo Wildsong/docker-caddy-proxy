@@ -1,9 +1,7 @@
-# Right now this one is pretty much the same
-# as HomeAll's but for a few environment settings
-# and a longer pause in healthcheck.
-
 ARG GOLANG_VERSION=1.17
 ARG ALPINE_VERSION=3.15
+
+### STAGE 1 ###
 
 FROM golang:${GOLANG_VERSION}-alpine${ALPINE_VERSION} as gobuild
 ARG GOLANG_VERSION
@@ -19,20 +17,19 @@ RUN  xcaddy build \
 	 --with github.com/lucaslorentz/caddy-docker-proxy/plugin/v2 \
 	 --with github.com/caddy-dns/cloudflare
 
+### STAGE 2 ###
+
 FROM alpine:${ALPINE_VERSION}
 
 ARG GOLANG_VERSION
 ARG ALPINE_VERSION
 
 RUN apk add --no-cache ca-certificates curl tzdata; \
-             rm -rf /var/cache/apk/*;
+    rm -rf /var/cache/apk/*;
 
 LABEL maintainer "Wildsong"
 
 EXPOSE 80 443 2019
-
-ENV XDG_CONFIG_HOME /config
-ENV XDG_DATA_HOME /data
 
 COPY --from=gobuild /go/src/github.com/caddyserver/xcaddy/cmd/caddy /usr/bin/
 
@@ -50,5 +47,16 @@ ENV CLOUDFLARE_API_TOKEN ${CLOUDFLARE_API_TOKEN}
 ENV CADDY_DOCKER_CADDYFILE_PATH ""
 
 HEALTHCHECK --interval=600s --timeout=5s --start-period=5s CMD curl -fsS http://127.0.0.1:2019/config -o /dev/null || exit 1
+
+# Drop root privileges
+ARG USER_ID=1000
+ARG GROUP_ID=117
+ENV GROUP_ID=${GROUP_ID}
+RUN addgroup -g ${GROUP_ID} -S docker; \
+    adduser -g "Caddy Proxy" -G docker -s /bin/sh --disabled-password --uid ${USER_ID} caddy
+USER caddy
+ENV XDG_CONFIG_HOME=/home/caddy XDG_DATA_HOME=/data
+VOLUME /data
+
 ENTRYPOINT ["/usr/bin/caddy"]
 CMD ["docker-proxy"]

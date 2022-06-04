@@ -6,8 +6,8 @@ networks:
     external: true
 
 volumes:
-  caddy_data:
-    name: caddy_data
+  caddy_data: ## Persist certificates here
+    name: proxy_certs
     external: true
 
 services:
@@ -16,7 +16,9 @@ services:
     image: wildsong/caddy-proxy:latest
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.caddy
+      args:
+        - USER_ID=${USER_ID}
     ports:
       - "80:80"
       - "443:443"
@@ -28,8 +30,8 @@ services:
     labels:
       caddy.email: ${EMAIL}
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock" ## needed to read events
-      - caddy_data:/data:rw ## Persist certificates here
+      - /var/run/docker.sock:/var/run/docker.sock:ro ## needed to read events
+      - caddy_data:/data:rw
     networks:
       - proxy
 
@@ -38,7 +40,7 @@ services:
   # in here https://github.com/lucaslorentz/caddy-docker-proxy
 
 # This is for static content
-  root:
+  home:
     build:
       context: .
       dockerfile: Dockerfile.static
@@ -51,43 +53,23 @@ services:
 # so that this proxy will see them when they start up.
 # I wish I could keep all the tokens here and not distributed.
     labels:
-      caddy: ${CADDY_DOMAIN}
+      caddy: home.${DOMAIN}
       caddy.reverse_proxy: "{{upstreams 80}}"
       caddy.tls.protocols: "tls1.3"
-      caddy.tls.dns: "cloudflare ${CLOUDFLARE_API_TOKEN}"
+      caddy.tls.dns: "cloudflare ${API_TOKEN}"
     networks:
       - proxy
 
-# This is a placeholder so that cert is created
-# The redirect happens in Cloudflare via their "bulk redirects",
-# sending all traffic for "www.DOMAIN" to "DOMAIN".
-# Cloudflare needs to see there is a server with a cert
-# at this address before it will do the redirect.
-  www:
-    image: caddy:2.4.6
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-    labels:
-      caddy: www.${CADDY_DOMAIN}
-      caddy.respond: / "You should go to https://map46.com" 200
-      caddy.reverse_proxy: "{{upstreams 80}}"
-      caddy.tls.protocols: "tls1.3"
-      caddy.tls.dns: "cloudflare ${CLOUDFLARE_API_TOKEN}"
-    networks:
-      - proxy
-
-  p3:
+  test:
     image: jwilder/whoami:latest
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
     labels:
-      caddy: p3.${CADDY_DOMAIN}
+      caddy: test.${DOMAIN}
       caddy.reverse_proxy: "{{upstreams 8000}}"
       caddy.tls.protocols: "tls1.3"
-      caddy.tls.dns: "cloudflare ${CLOUDFLARE_API_TOKEN}"
+      caddy.tls.dns: "cloudflare ${API_TOKEN}"
     networks:
       - proxy
