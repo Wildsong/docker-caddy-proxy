@@ -1,14 +1,24 @@
 # docker-caddy-proxy
 
-This is a reverse proxy configuration based on
-[homeall/caddy-reverse-proxy-cloudflare](https://github.com/homeall/caddy-reverse-proxy-cloudflare) which is in turn built on 
+Caddy is a simple fast web server that I use a reverse proxy.
+
+2022-07-23 today I am building without Cloudflare support because I got an error and
+I don't need it right now.
+
+My reverse proxy configuration based on
+[homeall/caddy-reverse-proxy-cloudflare](https://github.com/homeall/caddy-reverse-proxy-cloudflare)
+which is in turn built on
 [lucaslorentz/caddy-docker-proxy](https://github.com/lucaslorentz/caddy-docker-proxy).
 Many thanks to homeall and to lucaslorentz for their excellent work.
 
-I am using Cloudflare for my domains, so Caddy makes the most sense.
-By using a Cloudflare API token, the proxy can communicate directly
-with their DNS to activate Let's Encrypt certificates. It is an
-elegant approach and even works behind a firewall.
+For Wildsong I am using Cloudflare for my all domains, so Caddy makes
+the most sense.  By using a Cloudflare API token, the proxy can
+communicate directly with their DNS to activate Let's Encrypt
+certificates. It is an elegant approach and even works behind a
+firewall.
+
+For Clatsop County and for TARRA the owners of the domains do not use Cloudflare, so I have to
+have web servers exposed to the Internet on port 80 to make it work.
 
 ## What this project is for
 
@@ -32,36 +42,73 @@ Just to kick things off, this is a Caddy HTTP server.
 
 Copy sample.env to .env and edit.
 
-Create the swarm-scoped network (works for compose or swarm)
+Create the swarm compatible network with "overlay" or a plain old one depending on your set up.
 
 ```bash
 docker network create -d overlay proxy
+
+or
+
+docker network create proxy
 ```
+
+### Without Cloudflare
+
+I commented out the cloudflare token entries in docker-compose.yml,
+make sure they are set as needed for you.
+
+### Using Cloudflare
 
 Generate an API token at Cloudflare.
 The token needs Zone-Zone-Read and Zone-DNS-Edit.
 
+### Create certificates volume
+
 Create the volume for certificates and a link.
 The link makes it easier to work with the certificates from other containers like svelte-template-app.
 
+I tried using a normal Docker volume but hit permissions problems so now I just do "mkdir certs". 
+
 ```bash
 docker-compose up -d
-docker run -ti --rm \
-  -v proxy_certs:/db
+docker run -ti --rm -v $PWD/certs:/db \
      alpine sh -c 'ln -s /db/caddy/certificates/acme-v02.api.letsencrypt.org-directory/ certificates'
 ```
 
 ## Permissions
 
-I decided to borrow the certificates generated here to test a Svelte app (svelte-template-app) that
-needed authentication, so I wanted it to use SSL. That means it needed to be able to read the certificates
+I decided to borrow the certificates generated here to test a Svelte
+app (svelte-template-app) that needed authentication, so I wanted it
+to use SSL. That means it needed to be able to read the certificates
 that Caddy generates.
 
-I changed this project to drop root permissions when it runs Caddy. To do this I had to change permissions
-on the caddy_data and config folders. I created a user "caddy" and put it in the "docker" group so that it
-could read the unix docker socket. Then I gave the volume group write and set its group to "docker".
-I moved the config folder from /config, and 
-it does not need to be in a volume, so it's in /home/caddy/ now.
+I changed this project to drop root permissions when it runs Caddy.
+This is why you need to specify a USER_ID in the .env file.
+Dropping root also means you need group read on the Docker socket,
+so there is also GROUP_ID in the .env.
+If you change these then you need to do another 'docker-compose build'.
+
+To drop root, I had to change permissions on the caddy_data and config
+folders. I created a user "caddy" and put it in the "docker" group so
+that it could read the unix docker socket. Then I gave the volume
+group write and set its group to "docker".  I moved the config folder
+from /config, and it does not need to be in a separate volume, so it's
+in /home/caddy/ now (in the container).
+
+## Almost there
+
+At this point you should probably do a build and see if everything works.
+
+```bash
+docker-compose build
+```
+
+
+## Testing
+
+I have two test servers set up in the docker-compose.yml file, you
+must provide "test.YOURDOMAIN" and "home.YOURDOMAIN" entries in your
+DNS for the tests to work.
 
 ## Run
 
