@@ -1,29 +1,30 @@
 # docker-caddy-proxy
 
-This is a reverse proxy configuration based on
-[homeall/caddy-reverse-proxy-cloudflare](https://github.com/homeall/caddy-reverse-proxy-cloudflare) which is in turn built on 
+Caddy is a simple fast web server that I use a reverse proxy.
+
+My reverse proxy configuration based on
+[homeall/caddy-reverse-proxy-cloudflare](https://github.com/homeall/caddy-reverse-proxy-cloudflare)
+which is in turn built on
 [lucaslorentz/caddy-docker-proxy](https://github.com/lucaslorentz/caddy-docker-proxy).
 Many thanks to homeall and to lucaslorentz for their excellent work.
 
-At home, I use Cloudflare for my domains.
-By using a Cloudflare API token, the Caddy proxy can communicate directly
-with the Cloudflare DNS to activate Let's Encrypt certificates. It is an
-elegant approach and even works behind a firewall.
+For Wildsong I am using Cloudflare for my all domains.
+By using a Cloudflare API token, the proxy can
+communicate directly with their DNS to activate Let's Encrypt
+certificates. It even works behind a firewall.
 
-This is not an option at work, we don't use Cloudflare, so I need to 
-use the conventional approach: tell Let's Encrypt to access a
-secret that is placed on a public webserver running on port 80.
+For Clatsop County and for TARRA the owners of the domains do not use Cloudflare, so I have to
+have web servers exposed to the Internet on port 80 to make it work.
+
 
 ## What this project is for
 
-Mostly at work, I have several use cases I need to support, that I had already
+I have several use cases I need to support, that I had already
 conquered with the nginx proxy. 
 
 At home I met the basic requirement, which is to reverse proxy several
 services that were already running behind a swag proxy.
 
-I have a single caddy instance running to serve static content
-but have not worked out all the path requirements I want yet.
 
 ## Use Docker to run a simple HTTP server.
 
@@ -35,25 +36,51 @@ Just to kick things off, this is a Caddy HTTP server.
 
 Copy sample.env to .env and edit.
 
+<<<<<<< HEAD
 Create the swarm-scoped network (works for compose or swarm)
 (I can't remember, I think I ended up not using swarm scoping.)
+=======
+Create the swarm compatible network with "overlay" or a plain old one depending on your set up.
+>>>>>>> 270abe3f4e46aece6805fa1da55d5d770ab82fa1
 
 ```bash
 docker network create -d overlay proxy
+
+or
+
+docker network create proxy
 ```
 
+<<<<<<< HEAD
 ### The Cloudflare path
+=======
+### Without Cloudflare
+
+I commented out the cloudflare token entries in docker-compose.yml,
+make sure they are set as needed for you.
+
+### Using Cloudflare
+>>>>>>> 270abe3f4e46aece6805fa1da55d5d770ab82fa1
 
 Generate an API token at Cloudflare.
 The token needs Zone-Zone-Read and Zone-DNS-Edit.
 
+### Create certificates volume
+
 Create the volume for certificates and a link.
 The link makes it easier to work with the certificates from other containers like svelte-template-app.
 
+I tried using a normal Docker volume but hit permissions problems so now I just do "mkdir certs". 
+
 ```bash
+<<<<<<< HEAD
 docker-compose -f docker-compose-cloudflare.yml up -d
 docker run -ti --rm \
   -v proxy_certs:/db
+=======
+docker-compose up -d
+docker run -ti --rm -v $PWD/certs:/db \
+>>>>>>> 270abe3f4e46aece6805fa1da55d5d770ab82fa1
      alpine sh -c 'ln -s /db/caddy/certificates/acme-v02.api.letsencrypt.org-directory/ certificates'
 ```
 
@@ -71,15 +98,38 @@ docker-compose up -d
 
 ## Permissions
 
-I decided to borrow the certificates generated here to test a Svelte app (svelte-template-app) that
-needed authentication, so I wanted it to use SSL. That means it needed to be able to read the certificates
+I decided to borrow the certificates generated here to test a Svelte
+app (svelte-template-app) that needed authentication, so I wanted it
+to use SSL. That means it needed to be able to read the certificates
 that Caddy generates.
 
-I changed this project to drop root permissions when it runs Caddy. To do this I had to change permissions
-on the caddy_data and config folders. I created a user "caddy" and put it in the "docker" group so that it
-could read the unix docker socket. Then I gave the volume group write and set its group to "docker".
-I moved the config folder from /config, and 
-it does not need to be in a volume, so it's in /home/caddy/ now.
+I changed this project to drop root permissions when it runs Caddy.
+This is why you need to specify a USER_ID in the .env file.
+Dropping root also means you need group read on the Docker socket,
+so there is also GROUP_ID in the .env.
+If you change these then you need to do another 'docker-compose build'.
+
+To drop root, I had to change permissions on the caddy_data and config
+folders. I created a user "caddy" and put it in the "docker" group so
+that it could read the unix docker socket. Then I gave the volume
+group write and set its group to "docker".  I moved the config folder
+from /config, and it does not need to be in a separate volume, so it's
+in /home/caddy/ now (in the container).
+
+## Almost there
+
+At this point you should probably do a build and see if everything works.
+
+```bash
+docker-compose build
+```
+
+
+## Testing
+
+I have two test servers set up in the docker-compose.yml file, you
+must provide "test.YOURDOMAIN" and "home.YOURDOMAIN" entries in your
+DNS for the tests to work.
 
 ## Run
 
@@ -133,6 +183,57 @@ I am going to use these services as my test.
 * A folder of static content underneath the same server at /static/
 * Another docker service on a different path. home-assistant.wildsong.biz
 * A service running on a different machine mapproxy.wildsong.biz
+
+### Comprehensive list of supported URLs
+
+## Test cases
+
+For CC, test these URLs, they are the ones we need to have functional.
+
+This is a flask microservice
+https://giscache.co.clatsop.or.us/photos/property/59210
+https://giscache.co.clatsop.or.us/photos/tn/property/59210
+
+this is mapproxy
+https://giscache.co.clatsop.or.us/ # root for mapproxy
+https://giscache.co.clatsop.or.us/osip/demo/?srs=EPSG%3A3857&format=image%2Fjpeg&wms_layer=osip2018
+
+this is static content served directly from nginx
+https://giscache.co.clatsop.or.us/photos/static
+https://giscache.co.clatsop.or.us/photos/waterway/5114
+https://giscache.co.clatsop.or.us/photos/waterway/ph5114.jpg
+https://giscache.co.clatsop.or.us/photos/tn/waterway/5114
+https://giscache.co.clatsop.or.us/photos/bridges/604A
+https://giscache.co.clatsop.or.us/photos/bridges/604A.jpg
+https://giscache.co.clatsop.or.us/photos/tn/bridges/604A
+https://giscache.co.clatsop.or.us/precincts/Precinct_119.pdf
+https://giscache.co.clatsop.or.us/precinct_tn/Precinct_119.png    note there is no S -- "precinct" not "precincts"
+
+this is another nginx instance right now
+https://capacity.co.clatsop.or.us/cases
+
+This just redirects to a different server (Matomo)
+https://echo.co.clatsop.or.us/
+
+The following simulated URLs should work. Make these work and you should be able to make the above work in deployment.
+
+https://arctic.wildsong.biz/photos/property/59210
+https://arctic.wildsong.biz/photos/tn/property/59210
+https://arctic.wildsong.biz/ # root for mapproxy
+https://arctic.wildsong.biz/osip/demo/?srs=EPSG%3A3857&format=image%2Fjpeg&wms_layer=osip2018
+https://arctic.wildsong.biz/photos/waterway/5114
+https://arctic.wildsong.biz/photos/waterway/ph5114.jpg
+https://arctic.wildsong.biz/photos/tn/waterway/5114
+https://arctic.wildsong.biz/photos/bridges/604A
+https://arctic.wildsong.biz/photos/bridges/604A.jpg
+https://arctic.wildsong.biz/photos/tn/bridges/604A
+https://arctic.wildsong.biz/photos/static
+https://arctic.wildsong.biz/precincts/Precinct_119.pdf
+https://arctic.wildsong.biz/precinct_tn/Precinct_119.png
+https://arctic.wildsong.biz/city-aerials
+
+https://maps.wildsong.biz/
+
 
 ## Adding a new service
 

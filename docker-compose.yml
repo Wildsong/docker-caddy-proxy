@@ -5,11 +5,6 @@ networks:
     name: proxy
     external: true
 
-volumes:
-  caddy_data: ## Persist certificates here
-    name: proxy_certs
-    external: true
-
 services:
   # This container will do NOTHING but the reverse proxy (and cert management).
   caddy:
@@ -20,8 +15,12 @@ services:
       args:
         - USER_ID=${USER_ID}
     ports:
-      - "80:80"
-      - "443:443"
+      - 80:80
+      - 443:443
+    environment:
+      - CADDY_INGRESS_NETWORKS=proxy
+    networks:
+      - proxy
     restart: unless-stopped
     deploy:
       replicas: 1
@@ -31,9 +30,7 @@ services:
       caddy.email: ${EMAIL}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro ## needed to read events
-      - caddy_data:/data:rw
-    networks:
-      - proxy
+      - ./certs:/data:rw
 
   # Some services to test reverse proxying.
   # Refer to the section "Labels to Caddyfile"
