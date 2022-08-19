@@ -36,12 +36,8 @@ Just to kick things off, this is a Caddy HTTP server.
 
 Copy sample.env to .env and edit.
 
-<<<<<<< HEAD
 Create the swarm-scoped network (works for compose or swarm)
 (I can't remember, I think I ended up not using swarm scoping.)
-=======
-Create the swarm compatible network with "overlay" or a plain old one depending on your set up.
->>>>>>> 270abe3f4e46aece6805fa1da55d5d770ab82fa1
 
 ```bash
 docker network create -d overlay proxy
@@ -51,16 +47,14 @@ or
 docker network create proxy
 ```
 
-<<<<<<< HEAD
 ### The Cloudflare path
-=======
+
 ### Without Cloudflare
 
-I commented out the cloudflare token entries in docker-compose.yml,
-make sure they are set as needed for you.
+I removed the cloudflare token entries in docker-compose.yml,
+use docker-compose-cloudflare.yml if you use Cloudflare.
 
 ### Using Cloudflare
->>>>>>> 270abe3f4e46aece6805fa1da55d5d770ab82fa1
 
 Generate an API token at Cloudflare.
 The token needs Zone-Zone-Read and Zone-DNS-Edit.
@@ -73,14 +67,9 @@ The link makes it easier to work with the certificates from other containers lik
 I tried using a normal Docker volume but hit permissions problems so now I just do "mkdir certs". 
 
 ```bash
-<<<<<<< HEAD
 docker-compose -f docker-compose-cloudflare.yml up -d
 docker run -ti --rm \
   -v proxy_certs:/db
-=======
-docker-compose up -d
-docker run -ti --rm -v $PWD/certs:/db \
->>>>>>> 270abe3f4e46aece6805fa1da55d5d770ab82fa1
      alpine sh -c 'ln -s /db/caddy/certificates/acme-v02.api.letsencrypt.org-directory/ certificates'
 ```
 
@@ -127,9 +116,10 @@ docker-compose build
 
 ## Testing
 
-I have two test servers set up in the docker-compose.yml file, you
+There are two test servers COMMENTED OUT in the docker-compose.yml file, you
 must provide "test.YOURDOMAIN" and "home.YOURDOMAIN" entries in your
-DNS for the tests to work.
+DNS for the tests to work. You can remove the "#" in front of the lines
+in docker-compose.yml and then restart it.
 
 ## Run
 
@@ -186,53 +176,33 @@ I am going to use these services as my test.
 
 ### Comprehensive list of supported URLs
 
-## Test cases
-
 For CC, test these URLs, they are the ones we need to have functional.
 
-This is a flask microservice
-https://giscache.co.clatsop.or.us/photos/property/59210
-https://giscache.co.clatsop.or.us/photos/tn/property/59210
+This is a flask microservice that uses SQL to find the location of photos, then serves them.
+curl https://giscache.co.clatsop.or.us/photos/property/59210
+curl https://giscache.co.clatsop.or.us/photos/tn/property/59210
 
-this is mapproxy
-https://giscache.co.clatsop.or.us/ # root for mapproxy
-https://giscache.co.clatsop.or.us/osip/demo/?srs=EPSG%3A3857&format=image%2Fjpeg&wms_layer=osip2018
+This is mapproxy
+curl https://giscache.co.clatsop.or.us/
+curl https://giscache.co.clatsop.or.us/osip/demo/?srs=EPSG%3A3857&format=image%2Fjpeg&wms_layer=osip2018
 
-this is static content served directly from nginx
-https://giscache.co.clatsop.or.us/photos/static
-https://giscache.co.clatsop.or.us/photos/waterway/5114
-https://giscache.co.clatsop.or.us/photos/waterway/ph5114.jpg
-https://giscache.co.clatsop.or.us/photos/tn/waterway/5114
-https://giscache.co.clatsop.or.us/photos/bridges/604A
-https://giscache.co.clatsop.or.us/photos/bridges/604A.jpg
-https://giscache.co.clatsop.or.us/photos/tn/bridges/604A
-https://giscache.co.clatsop.or.us/precincts/Precinct_119.pdf
-https://giscache.co.clatsop.or.us/precinct_tn/Precinct_119.png    note there is no S -- "precinct" not "precincts"
+Content served directly from nginx
+curl https://giscache.co.clatsop.or.us/precincts/Precinct_119.pdf
+curl https://giscache.co.clatsop.or.us/precinct_tn/Precinct_119.png
 
-this is another nginx instance right now
+The all require redirects, hence the -L
+curl -L https://giscache.co.clatsop.or.us/photos/static
+curl -L https://giscache.co.clatsop.or.us/photos/waterway/5114
+curl -L https://giscache.co.clatsop.or.us/photos/tn/waterway/5114
+curl -L https://giscache.co.clatsop.or.us/photos/bridges/604A
+curl -L https://giscache.co.clatsop.or.us/photos/bridges/604A.jpg
+curl -L https://giscache.co.clatsop.or.us/photos/tn/bridges/604A
+
+This is another separate nginx server; could merge it but maybe it will just go away soon?
 https://capacity.co.clatsop.or.us/cases
 
 This just redirects to a different server (Matomo)
 https://echo.co.clatsop.or.us/
-
-The following simulated URLs should work. Make these work and you should be able to make the above work in deployment.
-
-https://arctic.wildsong.biz/photos/property/59210
-https://arctic.wildsong.biz/photos/tn/property/59210
-https://arctic.wildsong.biz/ # root for mapproxy
-https://arctic.wildsong.biz/osip/demo/?srs=EPSG%3A3857&format=image%2Fjpeg&wms_layer=osip2018
-https://arctic.wildsong.biz/photos/waterway/5114
-https://arctic.wildsong.biz/photos/waterway/ph5114.jpg
-https://arctic.wildsong.biz/photos/tn/waterway/5114
-https://arctic.wildsong.biz/photos/bridges/604A
-https://arctic.wildsong.biz/photos/bridges/604A.jpg
-https://arctic.wildsong.biz/photos/tn/bridges/604A
-https://arctic.wildsong.biz/photos/static
-https://arctic.wildsong.biz/precincts/Precinct_119.pdf
-https://arctic.wildsong.biz/precinct_tn/Precinct_119.png
-https://arctic.wildsong.biz/city-aerials
-
-https://maps.wildsong.biz/
 
 
 ## Adding a new service
