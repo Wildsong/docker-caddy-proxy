@@ -36,7 +36,7 @@ services:
       - proxy
 
   # Some services to test reverse proxying.
-  # Refer to the section "Labels to Caddyfile"
+  # Refer tp the section "Labels to Caddyfile"
   # in here https://github.com/lucaslorentz/caddy-docker-proxy
 
 # This separate container uses caddy to deliver static content
@@ -51,10 +51,12 @@ services:
         condition: on-failure
 # You have to put labels like these into the compose files for related projects
 # so that this proxy will see them when they start up.
+# I wish I could keep all the tokens here and not distributed.
     labels:
       caddy: home.${DOMAIN}
       caddy.reverse_proxy: "{{upstreams 80}}"
       caddy.tls.protocols: "tls1.3"
+      caddy.tls.dns: "cloudflare ${API_TOKEN}"
     networks:
       - proxy
 
@@ -69,5 +71,6 @@ services:
       caddy: test.${DOMAIN}
       caddy.reverse_proxy: "{{upstreams 8000}}"
       caddy.tls.protocols: "tls1.3"
+      caddy.tls.dns: "cloudflare ${API_TOKEN}"
     networks:
       - proxy

@@ -5,18 +5,21 @@ This is a reverse proxy configuration based on
 [lucaslorentz/caddy-docker-proxy](https://github.com/lucaslorentz/caddy-docker-proxy).
 Many thanks to homeall and to lucaslorentz for their excellent work.
 
-I am using Cloudflare for my domains, so Caddy makes the most sense.
-By using a Cloudflare API token, the proxy can communicate directly
-with their DNS to activate Let's Encrypt certificates. It is an
+At home, I use Cloudflare for my domains.
+By using a Cloudflare API token, the Caddy proxy can communicate directly
+with the Cloudflare DNS to activate Let's Encrypt certificates. It is an
 elegant approach and even works behind a firewall.
+
+This is not an option at work, we don't use Cloudflare, so I need to 
+use the conventional approach: tell Let's Encrypt to access a
+secret that is placed on a public webserver running on port 80.
 
 ## What this project is for
 
-I have a bunch of use cases I need to support, that I have already
-conquered with the nginx proxy. I need to put together tests to see
-what it would be like using Caddy instead.
+Mostly at work, I have several use cases I need to support, that I had already
+conquered with the nginx proxy. 
 
-I met the basic requirement, which is to reverse proxy several
+At home I met the basic requirement, which is to reverse proxy several
 services that were already running behind a swag proxy.
 
 I have a single caddy instance running to serve static content
@@ -33,10 +36,13 @@ Just to kick things off, this is a Caddy HTTP server.
 Copy sample.env to .env and edit.
 
 Create the swarm-scoped network (works for compose or swarm)
+(I can't remember, I think I ended up not using swarm scoping.)
 
 ```bash
 docker network create -d overlay proxy
 ```
+
+### The Cloudflare path
 
 Generate an API token at Cloudflare.
 The token needs Zone-Zone-Read and Zone-DNS-Edit.
@@ -45,10 +51,22 @@ Create the volume for certificates and a link.
 The link makes it easier to work with the certificates from other containers like svelte-template-app.
 
 ```bash
-docker-compose up -d
+docker-compose -f docker-compose-cloudflare.yml up -d
 docker run -ti --rm \
   -v proxy_certs:/db
      alpine sh -c 'ln -s /db/caddy/certificates/acme-v02.api.letsencrypt.org-directory/ certificates'
+```
+
+### The traditional non-Cloudflare path
+
+I have to test this at home since I don't have control of the
+firewall and DNS at work. I need to simulate the same uses cases,
+see TESTS below.
+
+For this to work, the firewall must route traffic for port 80 and 443 to this machine.
+
+```bash
+docker-compose up -d
 ```
 
 ## Permissions
@@ -98,7 +116,7 @@ This is more elegant. Not sure if it works. TODO :-)
 
     docker exec caddy_caddy_1 curl http://localhost:2019/reload/
 
-## The tests
+## TESTS
 
 Solve these problems to determine if it is suitable.
 
@@ -109,16 +127,12 @@ Solve these problems to determine if it is suitable.
 For example, I could put webforms.co.clatsop.or.us on cc-giscache and put the actual Flask docker on cc-testmaps.
 This is not essential but would be great to separate development from production.
 
-### Real life example from cc-giscache
+I am going to use these services as my test.
 
-Read fast I will be deleting this section soon.
-
-* https://giscache.co.clatsop.or.us/   reverse for mapproxy service
-* https://giscache.co.clatsop.or.us/PDF  static content for a folder out on the network fileserver
-* https://giscache.co.clatsop.or.us/photoshow/  reverse for photoshow service
-* https://giscache.co.clatsop.or.us/photo/  reverse for property_api Flask service
-* https://capacity.co.clatsop.or.us/   reverse for an nginx instance service static content
-* https://webforms.co.clatsop.or.us/   reverse for a flask app
+* A service running in its own container falco.wildsong.biz
+* A folder of static content underneath the same server at /static/
+* Another docker service on a different path. home-assistant.wildsong.biz
+* A service running on a different machine mapproxy.wildsong.biz
 
 ## Adding a new service
 
