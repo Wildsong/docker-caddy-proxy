@@ -49,8 +49,8 @@ ENV CADDY_DOCKER_CADDYFILE_PATH ""
 HEALTHCHECK --interval=600s --timeout=5s --start-period=5s CMD curl -fsS http://127.0.0.1:2019/config -o /dev/null || exit 1
 
 # Drop root privileges
-ARG USER_ID=1001
-ARG GROUP_ID=998
+ARG USER_ID=1000
+ARG GROUP_ID=113
 ENV GROUP_ID=${GROUP_ID}
 RUN addgroup -g ${GROUP_ID} -S docker; \
     adduser -g "Caddy Proxy" -G docker -s /bin/sh --disabled-password --uid ${USER_ID} caddy
