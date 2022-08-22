@@ -2,7 +2,7 @@ version: "3.7"
 
 networks:
   proxy:
-    name: proxy
+    name: ${NETWORK_NAME}
     external: true
 
 services:
@@ -14,18 +14,21 @@ services:
       dockerfile: Dockerfile.caddy
       args:
         - USER_ID=${USER_ID}
+        - GROUP_ID=${GROUP_ID}
     ports:
       - 80:80
       - 443:443
+    env_file:
+      - .env
     environment:
-      - CADDY_INGRESS_NETWORKS=proxy
+      - CADDY_INGRESS_NETWORKS=${NETWORK_NAME}
     networks:
       - proxy
     restart: unless-stopped
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
+    #deploy:
+    #  replicas: 1
+    #  restart_policy:
+    #    condition: on-failure
     labels:
       caddy.email: ${EMAIL}
     volumes:
@@ -36,24 +39,25 @@ services:
   # Refer to the section "Labels to Caddyfile"
   # in here https://github.com/lucaslorentz/caddy-docker-proxy
 
-## This separate container uses caddy to deliver static content
-#  home:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile.static
-#    image: wildsong/static-caddy:latest
-#    deploy:
-#      replicas: 1
-#      restart_policy:
-#        condition: on-failure
-## You have to put labels like these into the compose files for related projects
-## so that this proxy will see them when they start up.
-#    labels:
-#      caddy: home.${DOMAIN}
-#      caddy.reverse_proxy: "{{upstreams 80}}"
-#      caddy.tls.protocols: "tls1.3"
-#    networks:
-#      - proxy
+# This separate container uses caddy to deliver static content
+  test:
+    image: wildsong/static-caddy:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.static
+    restart: unless-stopped
+    #deploy:
+    #  replicas: 1
+    #  restart_policy:
+    #    condition: on-failure
+# You have to put labels like these into the compose files for related projects
+# so that this proxy will see them when they start up.
+    labels:
+      caddy: ${TEST_SERVER}.${DOMAIN}
+      caddy.reverse_proxy: "{{upstreams 80}}"
+      caddy.tls.protocols: "tls1.3"
+    networks:
+      - proxy
 
 ## This separate container just does the whoami thing.
 #  test:
