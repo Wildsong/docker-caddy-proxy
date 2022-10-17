@@ -8,6 +8,7 @@ networks:
 services:
   # This container will do NOTHING but the reverse proxy (and cert management).
   caddy:
+    container_name: caddy
     image: wildsong/caddy-proxy:latest
     build:
       context: .
@@ -41,6 +42,7 @@ services:
 
 # This separate container uses caddy to deliver static content
   test:
+    container_name: caddy_test
     image: wildsong/static-caddy:latest
     build:
       context: .
