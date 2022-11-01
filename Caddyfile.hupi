@@ -1,0 +1,10 @@
+{
+  http_port 8088
+}
+
+http://hupi.map46.com {
+  root * /srv
+  file_server
+  encode gzip zstd
+}
+ 

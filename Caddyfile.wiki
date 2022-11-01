@@ -1,0 +1,11 @@
+{
+  http_port 80
+}
+
+http://wiki.map46.com {
+  root * /var/www/html
+  php_fastcgi phpfpm:9000
+  file_server
+  encode gzip zstd
+}
+ 

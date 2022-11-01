@@ -1,0 +1,47 @@
+FROM php:8.1-fpm-alpine
+
+#RUN apk add --no-cache curl tzdata
+
+# Install gd, iconv, mbstring, mysql, soap, sockets, zip, and zlib extensions
+# see example at https://hub.docker.com/_/php/
+RUN apk add --update \
+	freetype-dev \
+	libjpeg-turbo-dev \
+	libpng-dev \
+	libxml2-dev \
+	libzip-dev \
+	openssh-client \
+	icu-dev \
+ && apk add --update \
+        php81-json \
+        php81-pdo \
+        php81-pdo_mysql \
+        php81-session \
+        imagemagick \
+        imagemagick-libs \
+        imagemagick-dev \
+        php81-pcntl \
+        php81-zip \
+        php81-intl
+
+
+RUN docker-php-ext-install exif bcmath pdo_mysql pcntl \
+ && docker-php-ext-configure gd --with-jpeg --with-freetype \
+ && docker-php-ext-install gd \
+ && docker-php-ext-install intl \
+ && docker-php-ext-install zip
+
+#RUN printf "\n" | pecl install \
+#		imagick && \
+#		docker-php-ext-enable --ini-name 20-imagick.ini imagick
+#RUN printf "\n" | pecl install \
+#		pcov && \
+#		docker-php-ext-enable pcov
+#RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+# && php composer-setup.php \
+# && php -r "unlink('composer-setup.php');" \
+3 && mv composer.phar /usr/bin/composer
+
+#RUN rm -rf /var/cache/apk/*
+
+# FIXME this should be 2 stages to get rid of build tools now

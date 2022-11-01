@@ -1,0 +1,7 @@
+certs/
+wiki/
+hupi/
+public_html/
+
+.env
+*~

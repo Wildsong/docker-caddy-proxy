@@ -2,69 +2,115 @@ version: "3.7"
 
 networks:
   proxy:
-    name: proxy
+    name: ${NETWORK_NAME}
     external: true
+  database:  ### The database has its own private network connection
+    name: database
 
 volumes:
-  caddy_data:
-    name: caddy_data
-    external: true
-  caddy_config:
-    name: caddy_config
+  wiki:
+    name: wikifiles
+  database:
+    name: wikidb
 
 services:
-  caddy:
-    build:
+  # Refer to the section "Labels to Caddyfile"
+  # in here https://github.com/lucaslorentz/caddy-docker-proxy
+  wiki:
+    container_name: wiki
+    image: caddy:latest
+    environment:
+      TZ: 'America/Los_Angeles'
+    labels:
+      caddy: ${WIKI_FQDN} #### needed for caddy to redirect traffic
+      #caddy.tls.ca: "https://acme-staging-v02.api.letsencrypt.org/directory" # Needed only for testing.
+      caddy.reverse_proxy: "{{upstreams 80}}" #### needed to tell caddy which port number should send traffic
+      caddy.tls.protocols: "tls1.3" #### This is optional. Default it is tls1.2
+      caddy.tls.dns: "cloudflare ${CLOUDFLARE_API_TOKEN}"
+    volumes:
+      - ./Caddyfile.wiki:/etc/caddy/Caddyfile
+      - wiki:/var/www/html #### content to be served
+      #- ./wiki/images:/var/www/html/images
+      # Run the docker and do the installation, that will send you a LocalSettings.php file
+#      - ./wiki/LocalSettings.php:/var/www/html/LocalSettings.php:ro
+    networks:
+      - proxy
+    restart: unless-stopped
+    depends_on:
+      - database
+      - phpfpm
+
+  phpfpm:
+    container_name: phpfpm
+    build: 
       context: .
+      dockerfile: Dockerfile.phpfpm
+    volumes:
+      - wiki:/var/www/html:ro
+    networks:
+      proxy:
+        aliases:
+          - phpfpm
+      database:
+    restart: unless-stopped
+    
+  database:
+    container_name: wikidb
+    image: mariadb:latest
+    environment:
+      # @see https://phabricator.wikimedia.org/source/mediawiki/browse/master/includes/DefaultSettings.php
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - database:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      database:
+        aliases:
+          - database ## This name is used in wiki/LocalSettings.php
+
+# This one will need to work witout Cloudflare, 
+# because Theo handles DNS for HuPI.org
+  hupi:
+    container_name: hupi
+    image: caddy:latest
+    environment:
+      TZ: 'America/Los_Angeles'
+    labels:
+      caddy: ${HUPI_FQDN} #### needed for caddy to redirect traffic
+      #caddy.servers.protocols: "experimental_http3" #### For HTTP/3
+      #caddy.tls.ca: "https://acme.zerossl.com/v2/DV90" ### Only if you will prefer ZeroSSL. Default it is Let's Encypt.
+      #caddy.tls.ca: "https://acme-staging-v02.api.letsencrypt.org/directory" # Needed only for testing purpose. Remove this line after you finished your tests.
+      caddy.reverse_proxy: "{{upstreams 8088}}" #### needed to tell caddy which port number should send traffic
+      caddy.tls.protocols: "tls1.3" #### This is optional. Default it is tls1.2
+      caddy.tls.dns: "cloudflare ${CLOUDFLARE_API_TOKEN}"
+    volumes:
+      - ./Caddyfile.hupi:/etc/caddy/Caddyfile
+      - ./hupi:/srv #### content to be served
+    networks:
+      - proxy
+    restart: unless-stopped
+
+  proxy:
+    container_name: proxy
+    image: homeall/caddy-reverse-proxy-cloudflare:latest
+    environment:
+      TZ: 'America/Los_Angeles'
+      CADDY_INGRESS_NETWORKS: ${NETWORK_NAME}
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - ./content:/srv
-      - caddy_data:/data
-      - caddy_config:/config
+      - "/var/run/docker.sock:/var/run/docker.sock" #### needed socket to read events
+      - "./certs:/data" #### needed volume to back up certificates
+    labels:
+      caddy.email: ${EMAIL}
+    networks:
+      - proxy
+    restart: unless-stopped
     depends_on:
-      - p1
-      - p2
-      - p3
-
-    #restart: unless-stopped
-
-  # Some services to test reverse proxying.
-  p1:
-    image: caddy:2.4.6
-    ports:
-      - "8002:80"
-    volumes:
-      - ./Caddyfile_p1:/etc/caddy/Caddyfile
-    networks:
-      proxy:
-        aliases: 
-          - p1
-
+      - hupi
+      - wiki
     
-  p2:
-    image: caddy:2.4.6
-    ports:
-      - "8003:80"
-    volumes:
-      - ./Caddyfile_p2:/etc/caddy/Caddyfile
-    networks:
-      proxy:
-        aliases: 
-          - p2
-
-    
-  p3:
-    image: caddy:2.4.6
-    ports:
-      - "8004:80"
-    volumes:
-      - ./Caddyfile_p3:/etc/caddy/Caddyfile
-    networks:
-      proxy:
-        aliases: 
-          - p3
-
-

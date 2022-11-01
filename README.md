@@ -14,7 +14,6 @@ docker exec caddy_caddy_1 caddy reload --config /etc/caddy/Caddyfile --adapter c
 
 
 
-
 Matomo web site analytics.
 
 ## Solve these problems to determine if it is suitable.
@@ -34,3 +33,11 @@ This is not essential but would be great to separate development from production
 * https://giscache.co.clatsop.or.us/photo/  reverse for property_api Flask service
 * https://capacity.co.clatsop.or.us/   reverse for an nginx instance service static content
 * https://webforms.co.clatsop.or.us/   reverse for a flask app
+
+
+
+
+## Resources
+
+Fork of Lucas Lorentz project with added Cloudflare support
+https://github.com/homeall/caddy-reverse-proxy-cloudflare
