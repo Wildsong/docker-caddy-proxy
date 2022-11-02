@@ -5,10 +5,10 @@ networks:
     name: proxy
     external: true
 
-volumes:
-  caddy_data: ## Persist certificates here
-    name: proxy_certs
-    external: true
+#volumes:
+#  caddy_data: ## Persist certificates here
+#    name: proxy_certs
+#    external: true
 
 services:
   # This container will do NOTHING but the reverse proxy (and cert management).
@@ -19,6 +19,7 @@ services:
       dockerfile: Dockerfile.caddy
       args:
         - USER_ID=${USER_ID}
+        - GROUP_ID=${GROUP_ID}
     ports:
       - "80:80"
       - "443:443"
@@ -31,7 +32,7 @@ services:
       caddy.email: ${EMAIL}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro ## needed to read events
-      - caddy_data:/data:rw
+      - ./certs:/data:rw
     networks:
       - proxy
 
@@ -56,7 +57,7 @@ services:
       caddy: home.${DOMAIN}
       caddy.reverse_proxy: "{{upstreams 80}}"
       caddy.tls.protocols: "tls1.3"
-      caddy.tls.dns: "cloudflare ${API_TOKEN}"
+      caddy.tls.dns: "cloudflare ${CLOUDFLARE_API_TOKEN}"
     networks:
       - proxy
 
@@ -71,6 +72,6 @@ services:
       caddy: test.${DOMAIN}
       caddy.reverse_proxy: "{{upstreams 8000}}"
       caddy.tls.protocols: "tls1.3"
-      caddy.tls.dns: "cloudflare ${API_TOKEN}"
+      caddy.tls.dns: "cloudflare ${CLOUDFLARE_API_TOKEN}"
     networks:
       - proxy

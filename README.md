@@ -47,8 +47,6 @@ or
 docker network create proxy
 ```
 
-### The Cloudflare path
-
 ### Without Cloudflare
 
 I removed the cloudflare token entries in docker-compose.yml,

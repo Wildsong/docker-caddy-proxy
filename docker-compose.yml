@@ -8,67 +8,23 @@ networks:
 services:
   # This container will do NOTHING but the reverse proxy (and cert management).
   caddy:
-    image: wildsong/caddy-proxy:latest
-    build:
-      context: .
-      dockerfile: Dockerfile.caddy
-      args:
-        - USER_ID=${USER_ID}
-        - GROUP_ID=${GROUP_ID}
-    ports:
-      - 80:80
-      - 443:443
-    env_file:
-      - .env
+    container_name: proxy
+    image: homeall/caddy-reverse-proxy-cloudflare:latest
     environment:
-      - CADDY_INGRESS_NETWORKS=${NETWORK_NAME}
-    networks:
-      - proxy
-    restart: unless-stopped
-    #deploy:
-    #  replicas: 1
-    #  restart_policy:
-    #    condition: on-failure
+      TZ: 'America/Los_Angeles'
+      CADDY_INGRESS_NETWORKS: ${NETWORK_NAME}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock" #### needed socket to read events
+      - "./certs:/data" #### needed volume to back up certificates
     labels:
       caddy.email: ${EMAIL}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro ## needed to read events
-      - ./certs:/data:rw
-
-  # Some services to test reverse proxying.
-  # Refer to the section "Labels to Caddyfile"
-  # in here https://github.com/lucaslorentz/caddy-docker-proxy
-
-# This separate container uses caddy to deliver static content
-  test:
-    image: wildsong/static-caddy:latest
-    build:
-      context: .
-      dockerfile: Dockerfile.static
-    restart: unless-stopped
-    #deploy:
-    #  replicas: 1
-    #  restart_policy:
-    #    condition: on-failure
-# You have to put labels like these into the compose files for related projects
-# so that this proxy will see them when they start up.
-    labels:
-      caddy: ${TEST_SERVER}.${DOMAIN}
-      caddy.reverse_proxy: "{{upstreams 80}}"
-      caddy.tls.protocols: "tls1.3"
     networks:
       - proxy
-
-## This separate container just does the whoami thing.
-#  test:
-#    image: jwilder/whoami:latest
-#    deploy:
-#      replicas: 1
-#      restart_policy:
-#        condition: on-failure
-#    labels:
-#      caddy: test.${DOMAIN}
-#      caddy.reverse_proxy: "{{upstreams 8000}}"
-#      caddy.tls.protocols: "tls1.3"
-#    networks:
-#      - proxy
+    restart: unless-stopped
+#    depends_on:
+#      - hupi
+#      - wiki
+    
