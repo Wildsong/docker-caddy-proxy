@@ -1,6 +1,6 @@
 # docker-caddy-proxy
 
-Caddy is a simple fast web server that I use a reverse proxy.
+Caddy is a simple fast web server that I use here as a reverse proxy.
 
 My reverse proxy configuration based on
 [homeall/caddy-reverse-proxy-cloudflare](https://github.com/homeall/caddy-reverse-proxy-cloudflare)
@@ -16,7 +16,6 @@ certificates. It even works behind a firewall.
 For Clatsop County and for TARRA the owners of the domains do not use Cloudflare, so I have to
 have web servers exposed to the Internet on port 80 to make it work.
 
-
 ## What this project is for
 
 I have several use cases I need to support, that I had already
@@ -24,7 +23,6 @@ conquered with the nginx proxy.
 
 At home I met the basic requirement, which is to reverse proxy several
 services that were already running behind a swag proxy.
-
 
 ## Use Docker to run a simple HTTP server.
 
@@ -110,7 +108,6 @@ At this point you should probably do a build and see if everything works.
 ```bash
 docker-compose build
 ```
-
 
 ## Testing
 
@@ -217,6 +214,9 @@ to tell Caddy about it. Here is my Home Assistant for example,
 ```
 
 ## Resources
+
+See my Mediawiki project, which uses this proxy and runs a MediaWiki based wiki.
+https://github.com/Wildsong/docker-caddy-mediawiki
 
 https://blog.atkinson.cloud/posts/2021/02/running-caddy-as-a-reverse-proxy-with-cloudflare-dns/
 
