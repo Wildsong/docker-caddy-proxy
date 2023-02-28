@@ -1,5 +1,10 @@
 version: "3.7"
 
+volumes:
+# Shared with nginx-proxy (use one or the other but store certs in the same volume)
+  certs:
+    name: proxy_certs
+
 networks:
   proxy:
     name: ${NETWORK_NAME}
@@ -9,7 +14,8 @@ services:
   # This container will do NOTHING but the reverse proxy (and cert management).
   caddy:
     container_name: proxy
-    image: homeall/caddy-reverse-proxy-cloudflare:latest
+    image: lucaslorentz/caddy-docker-proxy:latest
+    #image: homeall/caddy-reverse-proxy-cloudflare:latest
     environment:
       TZ: 'America/Los_Angeles'
       CADDY_INGRESS_NETWORKS: ${NETWORK_NAME}
@@ -18,9 +24,11 @@ services:
       - "443:443"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock" #### needed socket to read events
-      - "./certs:/data" #### needed volume to back up certificates
+      - "certs:/data" #### needed volume to back up certificates
     labels:
       caddy.email: ${EMAIL}
+      # I can't get this to work
+      caddy.tls: "ciphers TLS_RSA_WITH_AES_256_GCM_SHA384"
     networks:
       - proxy
     restart: unless-stopped

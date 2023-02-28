@@ -1,20 +1,20 @@
 # docker-caddy-proxy
 
+**2023-02-28 There are certain cases where this proxy does not work as well as the nginxproxy.
+Specifically for ESRI products. So I am back to using nginxproxy at this time.**
+
 Caddy is a simple fast web server that I use here as a reverse proxy.
 
 My reverse proxy configuration based on
-[homeall/caddy-reverse-proxy-cloudflare](https://github.com/homeall/caddy-reverse-proxy-cloudflare)
-which is in turn built on
 [lucaslorentz/caddy-docker-proxy](https://github.com/lucaslorentz/caddy-docker-proxy).
-Many thanks to homeall and to lucaslorentz for their excellent work.
 
-For Wildsong I am using Cloudflare for my all domains.
-By using a Cloudflare API token, the proxy can
-communicate directly with their DNS to activate Let's Encrypt
-certificates. It even works behind a firewall.
+I experimented with the cloudflare variant but ended up not using it.
+[homeall/caddy-reverse-proxy-cloudflare](https://github.com/homeall/caddy-reverse-proxy-cloudflare)
 
 For Clatsop County and for TARRA the owners of the domains do not use Cloudflare, so I have to
 have web servers exposed to the Internet on port 80 to make it work.
+
+Many thanks to homeall and to lucaslorentz for their excellent work.
 
 ## What this project is for
 
